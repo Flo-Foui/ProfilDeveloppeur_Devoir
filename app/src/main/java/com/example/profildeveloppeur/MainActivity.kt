@@ -4,25 +4,30 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.profildeveloppeur.data.DeveloperProfileUi
+import com.example.profildeveloppeur.data.sampleProfile
+import com.example.profildeveloppeur.data.sampleProfileFullStack
+import com.example.profildeveloppeur.ui.components.ContactCard
+import com.example.profildeveloppeur.ui.components.ProfileHeader
+import com.example.profildeveloppeur.ui.components.ProjectCard
+import com.example.profildeveloppeur.ui.components.SkillsRow
 import com.example.profildeveloppeur.ui.theme.ProfilDeveloppeurTheme
 
 class MainActivity : ComponentActivity() {
@@ -33,259 +38,134 @@ class MainActivity : ComponentActivity() {
         setContent {
             ProfilDeveloppeurTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    ProfileScreen(modifier = Modifier.padding(innerPadding))
+                    ProfileScreen(
+                        profile = sampleProfile(),
+                        onContactClick = {
+                            // Plus tard : ouvrir l'application mail.
+                        },
+                        onPortfolioClick = {
+                            // Plus tard : ouvrir le portfolio.
+                        },
+                        modifier = Modifier.padding(innerPadding)
+                    )
                 }
             }
         }
     }
 }
 
-// Écran parent : il fournit les données et reçoit les événements.
+// Écran principal : une seule LazyColumn pour tout le contenu,
+// la LazyRow des compétences est un élément de cette liste.
 @Composable
-fun ProfileScreen(modifier: Modifier = Modifier) {
-    ProfileCard(
-        name = "Camille Laurent",
-        role = "Développeuse Android junior",
-        description = "Passionnée par le développement mobile, " +
-            "je crée des applications Android simples et accessibles.",
-        skill1 = "Kotlin",
-        skill2 = "Jetpack Compose",
-        skill3 = "Git",
-        contact = "camille.laurent@example.com",
-        isAvailable = true,
-        onContactClick = {
-            // Plus tard : traiter la demande de contact.
-        },
-        onPortfolioClick = {
-            // Plus tard : ouvrir le portfolio.
-        },
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(24.dp) // Padding externe : espace entre l'écran et la fiche.
-    )
-}
-
-// Fiche réutilisable : les informations viennent de ses paramètres.
-@Composable
-fun ProfileCard(
-    name: String,
-    role: String,
-    description: String,
-    skill1: String,
-    skill2: String,
-    skill3: String,
-    contact: String,
-    isAvailable: Boolean,
+fun ProfileScreen(
+    profile: DeveloperProfileUi,
     onContactClick: () -> Unit,
     onPortfolioClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        color = Color(0xFFF0F4FF),
+    LazyColumn(
         modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp) // Padding interne : espace dans la fiche.
-        ) {
+        item {
             ProfileHeader(
-                name = name,
-                role = role,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            ProfileDescription(
-                description = description,
-                modifier = Modifier.padding(bottom = 18.dp)
-            )
-            Text(
-                text = "Compétences",
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            ProfileSkill(skill = skill1, modifier = Modifier.padding(bottom = 4.dp))
-            ProfileSkill(skill = skill2, modifier = Modifier.padding(bottom = 4.dp))
-            ProfileSkill(skill = skill3, modifier = Modifier.padding(bottom = 16.dp))
-            ProfileAvailability(
-                isAvailable = isAvailable,
-                modifier = Modifier.padding(bottom = 10.dp)
-            )
-            ProfileContact(
-                contact = contact,
-                modifier = Modifier.padding(bottom = 18.dp)
-            )
-            ContactButton(
-                text = "Contacter",
-                onClick = onContactClick,
+                name = profile.name,
+                role = profile.role,
+                description = profile.description,
+                isAvailable = profile.isAvailable,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 10.dp)
+                    .padding(horizontal = 16.dp)
             )
-            PortfolioLink(
-                name = name,
-                onClick = onPortfolioClick,
-                modifier = Modifier.fillMaxWidth()
+        }
+
+        item {
+            SectionTitle(text = "Compétences")
+        }
+        item {
+            SkillsRow(skills = profile.skills)
+        }
+
+        item {
+            SectionTitle(text = "Projets et expériences")
+        }
+        items(profile.projects, key = { it.id }) { project ->
+            ProjectCard(
+                project = project,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            )
+        }
+
+        item {
+            SectionTitle(text = "Contact")
+        }
+        item {
+            ContactCard(
+                email = profile.email,
+                location = profile.location,
+                availability = profile.availability,
+                onContactClick = onContactClick,
+                onPortfolioClick = onPortfolioClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             )
         }
     }
 }
 
 @Composable
-fun ProfileHeader(
-    name: String,
-    role: String,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = name,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF152238)
-        )
-        Text(
-            text = role,
-            fontSize = 17.sp,
-            color = Color(0xFF315A90)
-        )
-    }
-}
-
-@Composable
-fun ProfileDescription(
-    description: String,
-    modifier: Modifier = Modifier
-) {
-    Text(
-        text = description,
-        modifier = modifier,
-        color = Color(0xFF273449)
-    )
-}
-
-@Composable
-fun ProfileSkill(
-    skill: String,
-    modifier: Modifier = Modifier
-) {
-    Text(
-        text = "• $skill",
-        modifier = modifier,
-        color = Color(0xFF273449)
-    )
-}
-
-@Composable
-fun ProfileAvailability(
-    isAvailable: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Text(
-        text = if (isAvailable) {
-            "Disponibilité : disponible pour un stage"
-        } else {
-            "Disponibilité : non disponible actuellement"
-        },
-        modifier = modifier,
-        color = if (isAvailable) Color(0xFF176A3A) else Color(0xFF664B27)
-    )
-}
-
-@Composable
-fun ProfileContact(
-    contact: String,
-    modifier: Modifier = Modifier
-) {
-    Text(
-        text = "Contact : $contact",
-        modifier = modifier,
-        color = Color(0xFF273449)
-    )
-}
-
-// Comme dans le TP 2, le bouton transmet le clic à son parent.
-@Composable
-fun ContactButton(
+fun SectionTitle(
     text: String,
-    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Button(
-        onClick = onClick,
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.onBackground,
         modifier = modifier
-    ) {
-        Text(text = text)
-    }
+            .padding(horizontal = 16.dp)
+            .semantics { heading() }
+    )
 }
 
-// Zone cliquable personnalisée : rôle et description pour l'accessibilité.
+@Preview(name = "Profil - thème clair", showBackground = true, heightDp = 1400)
 @Composable
-fun PortfolioLink(
-    name: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        color = Color(0xFFDDE9FF),
-        modifier = modifier
-            .clickable(
-                role = Role.Button,
-                onClick = onClick
-            )
-            .semantics {
-                contentDescription = "Afficher le portfolio de $name"
-            }
-    ) {
-        Text(
-            text = "Voir le portfolio",
-            modifier = Modifier.padding(14.dp),
-            color = Color(0xFF1B4D91),
-            fontWeight = FontWeight.Bold
+fun ProfileScreenLightPreview() {
+    ProfilDeveloppeurTheme(darkTheme = false) {
+        ProfileScreen(
+            profile = sampleProfile(),
+            onContactClick = {},
+            onPortfolioClick = {}
         )
     }
 }
 
-// Preview 1 : profil Android disponible.
-@Preview(name = "Profil Android junior", showBackground = true)
+@Preview(name = "Profil - thème sombre", showBackground = true, heightDp = 1400)
 @Composable
-fun ProfilePreviewAndroid() {
-    ProfilDeveloppeurTheme {
-        ProfileCard(
-            name = "Camille Laurent",
-            role = "Développeuse Android junior",
-            description = "Je crée des applications Android avec Kotlin et Compose.",
-            skill1 = "Kotlin",
-            skill2 = "Jetpack Compose",
-            skill3 = "Git",
-            contact = "camille.laurent@example.com",
-            isAvailable = true,
+fun ProfileScreenDarkPreview() {
+    ProfilDeveloppeurTheme(darkTheme = true) {
+        ProfileScreen(
+            profile = sampleProfile(),
             onContactClick = {},
-            onPortfolioClick = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            onPortfolioClick = {}
         )
     }
 }
 
-// Preview 2 : profil full-stack non disponible.
-@Preview(name = "Profil full-stack", showBackground = true)
+@Preview(name = "Profil full-stack non disponible", showBackground = true, heightDp = 1100)
 @Composable
-fun ProfilePreviewFullStack() {
-    ProfilDeveloppeurTheme {
-        ProfileCard(
-            name = "Alex Bernard",
-            role = "Développeur full-stack",
-            description = "Je développe des sites et des services web.",
-            skill1 = "Kotlin",
-            skill2 = "JavaScript",
-            skill3 = "SQL",
-            contact = "alex.bernard@example.com",
-            isAvailable = false,
+fun ProfileScreenFullStackPreview() {
+    ProfilDeveloppeurTheme(darkTheme = false) {
+        ProfileScreen(
+            profile = sampleProfileFullStack(),
             onContactClick = {},
-            onPortfolioClick = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            onPortfolioClick = {}
         )
     }
 }
